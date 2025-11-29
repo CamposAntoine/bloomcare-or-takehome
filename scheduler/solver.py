@@ -51,6 +51,23 @@ def solve(visits: list[Visit], caregivers: list[Caregiver]) -> list[Assignment]:
                     model.Add(planning[v1.id][c.id] + planning[v2.id][c.id] <= 1)
 
 
+    # Gestion de la contraine max_hours
+    for c in caregivers:
+        caregiver_visits = [v for v in visits if c.id in planning[v.id]]
+        if not caregiver_visits:
+            continue
+
+        vars_list = []
+        durations = []
+
+        for v in caregiver_visits:
+            duration_hours = (v.end - v.start).seconds // 3600  
+            durations.append(duration_hours)
+            vars_list.append(planning[v.id][c.id])
+
+        model.Add(sum(d * var for d, var in zip(durations, vars_list)) <= c.max_hours)
+
+
 
     # Note à moi-même, je devrai faire attention à l'inverse à la fin : que une visite ne puisse pas être faites par deux soignants
 
