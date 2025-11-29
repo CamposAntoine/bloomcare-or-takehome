@@ -35,4 +35,23 @@ def solve(visits: list[Visit], caregivers: list[Caregiver]) -> list[Assignment]:
             if not available:
                 model.Add(var == 0)
 
+
+    # Gestion de la contrainte de non-chevauchement
+    for c in caregivers:
+        # Récupérer toutes les visites possibles pour ce soignant sous forme de liste d'objets Visit
+        caregiver_visits = [v for v in visits if c.id in planning[v.id]]
+        
+        # Pour toutes les paires de visites
+        for i in range(len(caregiver_visits)):
+            for j in range(i + 1, len(caregiver_visits)):
+                v1 = caregiver_visits[i]
+                v2 = caregiver_visits[j]
+                if visits_overlap(v1, v2):
+                    # Si chevauchement on ajoute la contrainte
+                    model.Add(planning[v1.id][c.id] + planning[v2.id][c.id] <= 1)
+
+
+
+    # Note à moi-même, je devrai faire attention à l'inverse à la fin : que une visite ne puisse pas être faites par deux soignants
+
     return []

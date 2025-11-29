@@ -13,3 +13,14 @@ def available_for_that_visit(caregiver, visit) -> bool:
             visit.end.time() <= avail.end):
             return True  
     return False 
+
+
+def visits_overlap(v1: Visit, v2: Visit) -> bool:
+    """
+    Vérifie si deux visites se chevauchent dans le temps.
+
+    Renvoie True si chevauchement, False sinon
+    """
+    latest_start = max(v1.start, v2.start)
+    earliest_end = min(v1.end, v2.end)
+    return latest_start < earliest_end
