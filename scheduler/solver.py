@@ -2,7 +2,8 @@
 from ortools.sat.python import cp_model
 
 from .models import Assignment, Caregiver, Visit
-from utils.py import available_for_that_visit
+from scheduler.utils import available_for_that_visit
+from scheduler.utils import visits_overlap
 
 def solve(visits: list[Visit], caregivers: list[Caregiver]) -> list[Assignment]:
     """
@@ -68,7 +69,29 @@ def solve(visits: list[Visit], caregivers: list[Caregiver]) -> list[Assignment]:
         model.Add(sum(d * var for d, var in zip(durations, vars_list)) <= c.max_hours)
 
 
+    # Il n'y a que un caregiver par visite :
+    for v in visits:
+        model.Add(
+            sum(var for var in planning[v.id].values()) <= 1
+        )
 
-    # Note à moi-même, je devrai faire attention à l'inverse à la fin : que une visite ne puisse pas être faites par deux soignants
+    # Objectif du modèle : maximiser le nombres de visites effectuées :
+    model.Maximize(
+        sum(var for v in visits for var in planning[v.id].values())
+    )
 
-    return []
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    assignments = []
+
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        for v in visits:
+            for c_id, var in planning[v.id].items():
+                if solver.BooleanValue(var):
+                    assignments.append(Assignment(visit_id=v.id, caregiver_id=c_id))
+    else:
+        print("⚠️ Aucune solution trouvée !")
+
+    return assignments
+

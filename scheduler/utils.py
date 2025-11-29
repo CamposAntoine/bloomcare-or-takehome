@@ -15,7 +15,7 @@ def available_for_that_visit(caregiver, visit) -> bool:
     return False 
 
 
-def visits_overlap(v1: Visit, v2: Visit) -> bool:
+def visits_overlap(v1, v2) -> bool:
     """
     Vérifie si deux visites se chevauchent dans le temps.
 
