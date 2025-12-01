@@ -41,7 +41,7 @@ I spent around 3-4 hours on this assignement
 My solver will return a list of assignments (see `Assignment` class in `models.py`). Run `poetry run python -m scheduler` to evaluate your output (see [CONTRIBUTING.md](CONTRIBUTING.md))
 
 
-### What you will be evaluated on
+### What I will be evaluated on
 
 - [ ] You followed the instructions
 - [ ] Your architecture and design choices are clearly documented
