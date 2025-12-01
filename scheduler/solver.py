@@ -1,5 +1,7 @@
 """Solver module for the Bloom Care scheduling problem."""
 from ortools.sat.python import cp_model
+from collections import defaultdict
+
 
 from .models import Assignment, Caregiver, Visit
 from scheduler.utils import available_for_that_visit
@@ -75,10 +77,62 @@ def solve(visits: list[Visit], caregivers: list[Caregiver]) -> list[Assignment]:
             sum(var for var in planning[v.id].values()) <= 1
         )
 
+    # Objectif bonus : pénaliser un haut nombre de caregivers différents par patiens
+    customer_caregiver_vars = {}
+    for v in visits:
+        customer = v.customer
+        if customer not in customer_caregiver_vars:
+            customer_caregiver_vars[customer] = {}
+        for c_id, var in planning[v.id].items():
+            if c_id not in customer_caregiver_vars[customer]:
+                customer_caregiver_vars[customer][c_id] = model.NewBoolVar(f"{customer}_{c_id}")
+            model.Add(var <= customer_caregiver_vars[customer][c_id])
+
+    # somme que je vais essayer de minimiser pendant le solving
+    continuity_penalty = sum(
+        customer_caregiver_vars[customer][c_id]
+        for customer in customer_caregiver_vars
+        for c_id in customer_caregiver_vars[customer]
+    )
+
+
+    # Objectif bonus : pénaliser le fait que un caregiver fasse deux visites d'affilées dans deux quartiers différents
+    travel_penalty_vars = []
+
+    for c in caregivers:
+        visits_by_day = defaultdict(list)
+        for v in visits:
+            if c.id in planning[v.id]:
+                day = v.start.date()  # juste besoin du jour
+                visits_by_day[day].append(v)
+
+        for day_visits in visits_by_day.values():
+            # On trie pour ne regarder que les visites consécutives
+            day_visits.sort(key=lambda v: v.start)
+            for i in range(len(day_visits) - 1):
+                v1 = day_visits[i]
+                v2 = day_visits[i + 1]
+
+                # On regarde que les paires dans des quartiers différents
+                if v1.neighborhood != v2.neighborhood:
+                    switch_var = model.NewBoolVar(f"switch_{c.id}_{v1.id}_{v2.id}")
+                    # Si switch_var = 1 => les deux visites sont assignées à c
+                    model.AddBoolAnd([planning[v1.id][c.id], planning[v2.id][c.id]]).OnlyEnforceIf(switch_var)
+                    # Si switch_var = 0 => il enchaine pas les deux visites
+                    model.AddBoolOr([planning[v1.id][c.id].Not(), planning[v2.id][c.id].Not()]).OnlyEnforceIf(switch_var.Not())
+                    
+                    travel_penalty_vars.append(switch_var)
+
+    travel_penalty = sum(travel_penalty_vars)
+
     # Objectif du modèle : maximiser le nombres de visites effectuées :
+    # (et maintenant minimiser le trajet, et les caregivers différents par patients)
     model.Maximize(
         sum(var for v in visits for var in planning[v.id].values())
-    )
+        - 0.5*continuity_penalty
+        - 0.2*travel_penalty
+    ) # Sans coeffictient j'ai une violation de visites non assignées
+      # je choisis 0.5 arbitrairement et ça fonctionne : chaque patient ne voit que un soignant et 0 violation
 
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
