@@ -321,11 +321,11 @@ def evaluate(
     }
 
     # Calculate optimization metrics
-    evaluation["optimization_metrics"]["continuity_score"] = (
-        _calculate_continuity_score(assignments, visits)
-    )
-    evaluation["optimization_metrics"]["travel_efficiency_score"] = (
-        _calculate_travel_efficiency_score(assignments, visits)
-    )
+    evaluation["optimization_metrics"][
+        "continuity_score"
+    ] = _calculate_continuity_score(assignments, visits)
+    evaluation["optimization_metrics"][
+        "travel_efficiency_score"
+    ] = _calculate_travel_efficiency_score(assignments, visits)
 
     return evaluation

@@ -1,21 +1,26 @@
-def available_for_that_visit(caregiver, visit) -> bool:
+from .models import Caregiver, Visit
+
+
+def available_for_that_visit(caregiver: Caregiver, visit: Visit) -> bool:
     """
     Vérifie si le caregiver peut effectuer la visite en terme de dispo.
-    
- 
+
+
     Renvoie: True si le caregiver peut effectuer la visite, False sinon
     """
     # On va chercher le jour de la semaine en majuscule, comme dans caregivers.json
     visit_day = visit.start.strftime("%A").upper()
     for avail in caregiver.availability:
-        if (avail.day == visit_day and
-            avail.start <= visit.start.time() and
-            visit.end.time() <= avail.end):
-            return True  
-    return False 
+        if (
+            avail.day == visit_day
+            and avail.start <= visit.start.time()
+            and visit.end.time() <= avail.end
+        ):
+            return True
+    return False
 
 
-def visits_overlap(v1, v2) -> bool:
+def visits_overlap(v1: Visit, v2: Visit) -> bool:
     """
     Vérifie si deux visites se chevauchent dans le temps.
 
